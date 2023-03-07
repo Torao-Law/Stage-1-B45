@@ -1,0 +1,7 @@
+.isPrimary {
+    background-color: orangered;
+}
+
+.text-isPrimary {
+    color: orangered !important;
+}
