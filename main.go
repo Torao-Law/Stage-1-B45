@@ -38,6 +38,7 @@ func main() {
 	e.GET("/blog", blog)                  //localhost:5000/blog
 	e.GET("/blog-detail/:id", blogDetail) //localhost:5000/blog-detail/0 | :id = url params
 	e.GET("/form-blog", formAddBlog)      //localhost:5000/form-blog
+	e.POST("/add-blog", addBlog)          //localhost:5000/add-blog
 
 	fmt.Println("Server berjalan di port 5000")
 	e.Logger.Fatal(e.Start("localhost:5000"))
@@ -73,4 +74,14 @@ func blogDetail(c echo.Context) error {
 
 func formAddBlog(c echo.Context) error {
 	return c.Render(http.StatusOK, "add-blog.html", nil)
+}
+
+func addBlog(c echo.Context) error {
+	title := c.FormValue("inputTitle")
+	content := c.FormValue("inputContent")
+
+	println("Title: " + title)
+	println("Content: " + content)
+
+	return c.Redirect(http.StatusMovedPermanently, "/blog")
 }
