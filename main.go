@@ -90,6 +90,8 @@ func blog(c echo.Context) error {
 }
 
 func blogDetail(c echo.Context) error {
+	// http://localhost:5000/blog-detail/1
+	// "1" => 1
 	id, _ := strconv.Atoi(c.Param("id")) // url params | dikonversikan dari string menjadi int/integer
 
 	var BlogDetail = Blog{}
