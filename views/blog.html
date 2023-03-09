@@ -41,7 +41,7 @@
 
     <div id="contents" class="blog-list">
       <!-- dynamic content would be here -->
-      {{range $id, $data := .Blogs}}
+      {{range $index, $data := .Blogs}}
       <div class="blog-list-item">
         <div class="blog-image">
           <img src="/public/images/blog-img.png" alt="" />
@@ -49,10 +49,10 @@
         <div class="blog-content">
           <div class="btn-group">
             <button class="btn-edit">Edit Post</button>
-            <a href="/delete-blog/{{$id}}" class="btn-post" style="text-decoration: none;">Delete Blog</a>
+            <a href="/delete-blog/{{$index}}" class="btn-post" style="text-decoration: none;">Delete Blog</a>
           </div>
           <h1>
-            <a href="/blog-detail/{{$id}}" target="_blank">{{$data.Title}}</a>
+            <a href="/blog-detail/{{$index}}" target="_blank">{{$data.Title}}</a>
           </h1>
           <div class="detail-blog-content">
             {{$data.PostDate}} | {{$data.Author}}
