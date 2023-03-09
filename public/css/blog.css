@@ -196,6 +196,10 @@ select {
   color: #fff;
 }
 
+.blog .blog-list .btn-group a {
+  text-decoration: none;
+}
+
 .blog .blog-list h1 a {
   text-decoration: none;
   color: #000000;

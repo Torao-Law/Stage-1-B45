@@ -6,12 +6,35 @@ import (
 	"net/http"
 	"strconv"
 	"text/template"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
 
 type Template struct {
 	templates *template.Template
+}
+
+type Blog struct {
+	Title    string
+	Content  string
+	Author   string
+	PostDate string
+}
+
+var dataBlog = []Blog{
+	{
+		Title:    "Ini adalah title",
+		Content:  "Heyy apakah saya ganteng ?",
+		Author:   "Dandi Saputra",
+		PostDate: "09 Maret 2023",
+	},
+	{
+		Title:    "Memang saya ganteng",
+		Content:  "VALIDDDDDD BANGET",
+		Author:   "Dandi Saputra",
+		PostDate: "09 Maret 2023",
+	},
 }
 
 func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
@@ -39,6 +62,7 @@ func main() {
 	e.GET("/blog-detail/:id", blogDetail) //localhost:5000/blog-detail/0 | :id = url params
 	e.GET("/form-blog", formAddBlog)      //localhost:5000/form-blog
 	e.POST("/add-blog", addBlog)          //localhost:5000/add-blog
+	e.GET("/delete-blog/:id", deleteBlog)
 
 	fmt.Println("Server berjalan di port 5000")
 	e.Logger.Fatal(e.Start("localhost:5000"))
@@ -57,19 +81,36 @@ func contact(c echo.Context) error {
 }
 
 func blog(c echo.Context) error {
-	return c.Render(http.StatusOK, "blog.html", nil)
+	// c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextHTML)
+	// c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextHTML)
+	blogs := map[string]interface{}{
+		"Blogs": dataBlog,
+	}
+	return c.Render(http.StatusOK, "blog.html", blogs)
 }
 
 func blogDetail(c echo.Context) error {
 	id, _ := strconv.Atoi(c.Param("id")) // url params | dikonversikan dari string menjadi int/integer
 
-	data := map[string]interface{}{ // data yang akan digunakan/dikirimkan ke html menggunakan map interface
-		"Id":      id,
-		"Title":   "Pasar Coding di Indonesia Dinilai Masih Menjanjikan",
-		"Content": "Ketimpangan sumber daya manusia (SDM) di sektor digital masih menjadi isu yang belum terpecahkan. Berdasarkan penelitian ManpowerGroup, ketimpangan SDM global, termasuk Indonesia, meningkat dua kali lipat dalam satu dekade terakhir. Lorem ipsum, dolor sit amet consectetur adipisicing elit. Quam, molestiae numquam! Deleniti maiores expedita eaque deserunt quaerat! Dicta, eligendi debitis?",
+	var BlogDetail = Blog{}
+
+	for i, data := range dataBlog {
+		if id == i {
+			BlogDetail = Blog{
+				Title:    data.Title,
+				Content:  data.Content,
+				PostDate: data.PostDate,
+				Author:   data.Author,
+			}
+		}
 	}
 
-	return c.Render(http.StatusOK, "blog-detail.html", data)
+	// data yang akan digunakan/dikirimkan ke html menggunakan map interface
+	detailBlog := map[string]interface{}{
+		"Blog": BlogDetail,
+	}
+
+	return c.Render(http.StatusOK, "blog-detail.html", detailBlog)
 }
 
 func formAddBlog(c echo.Context) error {
@@ -83,5 +124,29 @@ func addBlog(c echo.Context) error {
 	println("Title: " + title)
 	println("Content: " + content)
 
+	var newBlog = Blog{
+		Title:    title,
+		Content:  content,
+		Author:   "Dandi Saputra",
+		PostDate: time.Now().String(),
+	}
+
+	dataBlog = append(dataBlog, newBlog)
+
 	return c.Redirect(http.StatusMovedPermanently, "/blog")
 }
+
+func deleteBlog(c echo.Context) error {
+	id, _ := strconv.Atoi(c.Param("id"))
+
+	dataBlog = append(dataBlog[:id], dataBlog[id+1:]...)
+
+	return c.Redirect(http.StatusMovedPermanently, "/blog")
+}
+
+// 3
+// [0, 1, 2, 3, 4, 5, 6]
+// [0, 1, 2]
+// [4, 5, 6]
+
+// [0, 1, 2, 4, 5,6]
