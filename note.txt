@@ -1,0 +1,23 @@
+struct = sekumpulan definisi dari tiap tiap field
+contoh :
+type bootcamp struct {
+	name1 string
+	name2 int
+	name3 string
+}
+
+var batch45 = bootcamp{
+	name1: "alza",
+	name2: 4,
+	name3: "kevin",
+}
+
+Slice : mirip array, bertipe referensif.
+
+map[string]interface{} = melakukan maping untuk slide dimana key itu bertype string dan value adalah interface kosong.
+
+arr = ["Dandi ganteng", "memang ganteng", "valid"]
+
+obj1 = {"sudah valid"}
+
+arr.push(obj1)
