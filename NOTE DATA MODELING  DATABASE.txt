@@ -51,3 +51,41 @@ UPDATE public.tb_blog
 DELETE FROM public.tb_blog
 	WHERE id=3;
 
+
+[
+	{
+	"message" : "error bro",
+	"line" : "no 119",
+	},
+	{
+		"message" : "error bro",
+		"line" : "no 119",
+	}
+]
+
+
+REFERENSI UNTUK MENAMPILKAN TEMPLATE HTML MENGGUNAKAN METHOD ParseFiles()
+func testHome(c echo.Context) error {
+	// melakukan parsing atau menampilkan template html menggunakan ParseFiles()
+	tmpl, err := template.ParseFiles("views/contact.html")
+	if err != nil {
+		// menampilkan pesan error ke konsol untuk debug
+		fmt.Println("Error parsing template:", err)
+		// mengirim respon JSON dengan status code 500 jika terjadi kesalahan
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"message": "Internal Server Error",
+		})
+	}
+
+	// menambahkan header Content-Type untuk menentukan tipe konten response
+	c.Response().Header().Set("Content-type", "text/html; charset=UTF-8")
+	// mengembalikan template sebagai response dengan status code 200
+	return tmpl.Execute(c.Response(), nil)
+}
+
+
+shift + alt + arrow 
+alt + arrow
+ctrl + D
+
+"sukabapak" -> aksfjasodifwejrbni89234hckvjan923430

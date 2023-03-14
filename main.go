@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"personal-web/connection"
 	"strconv"
-	"text/template"
+
+	// "text/template"
+	"html/template"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -18,27 +20,13 @@ type Template struct {
 }
 
 type Blog struct {
-	ID       int
-	Title    string
-	Content  string
-	Author   string
-	PostDate time.Time
-	Image    string
-}
-
-var dataBlog = []Blog{
-	{
-		Title:   "Ini adalah title",
-		Content: "Heyy apakah saya ganteng ?",
-		Author:  "Dandi Saputra",
-		// PostDate: "09 Maret 2023",
-	},
-	{
-		Title:   "Memang saya ganteng",
-		Content: "VALIDDDDDD BANGET",
-		Author:  "Dandi Saputra",
-		// PostDate: "09 Maret 2023",
-	},
+	ID         int
+	Title      string
+	Content    string
+	Author     string
+	PostDate   time.Time
+	Image      string
+	FormatDate string
 }
 
 func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
@@ -60,7 +48,6 @@ func main() {
 	e.Renderer = t
 
 	// Routing
-	e.GET("/hello", helloWorld)           //localhost:5000/hello
 	e.GET("/", home)                      //localhost:5000
 	e.GET("/contact", contact)            //localhost:5000/contact
 	e.GET("/blog", blog)                  //localhost:5000/blog
@@ -68,13 +55,10 @@ func main() {
 	e.GET("/form-blog", formAddBlog)      //localhost:5000/form-blog
 	e.POST("/add-blog", addBlog)          //localhost:5000/add-blog
 	e.GET("/delete-blog/:id", deleteBlog)
+	// e.GET("/test", testHome)
 
 	fmt.Println("Server berjalan di port 5000")
 	e.Logger.Fatal(e.Start("localhost:5000"))
-}
-
-func helloWorld(c echo.Context) error {
-	return c.String(http.StatusOK, "Hello World!")
 }
 
 func home(c echo.Context) error {
@@ -97,6 +81,8 @@ func blog(c echo.Context) error {
 			fmt.Println(err.Error())
 			return c.JSON(http.StatusInternalServerError, map[string]string{"Message ": err.Error()})
 		}
+		each.Author = "Dandi Saputra"
+		each.FormatDate = each.PostDate.Format("07 February 2006")
 
 		result = append(result, each)
 	}
@@ -108,65 +94,49 @@ func blog(c echo.Context) error {
 }
 
 func blogDetail(c echo.Context) error {
-	// http://localhost:5000/blog-detail/1
-	// "1" => 1
 	id, _ := strconv.Atoi(c.Param("id")) // url params | dikonversikan dari string menjadi int/integer
-
 	var BlogDetail = Blog{}
+	err := connection.Conn.QueryRow(context.Background(), "SELECT id, title, content, image, post_date FROM tb_blog WHERE id=$1", id).Scan(&BlogDetail.ID, &BlogDetail.Title, &BlogDetail.Content, &BlogDetail.Image, &BlogDetail.PostDate)
 
-	for i, data := range dataBlog {
-		if id == i {
-			BlogDetail = Blog{
-				Title:    data.Title,
-				Content:  data.Content,
-				PostDate: data.PostDate,
-				Author:   data.Author,
-			}
-		}
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"Message ": err.Error()})
 	}
 
-	// data yang akan digunakan/dikirimkan ke html menggunakan map interface
-	detailBlog := map[string]interface{}{
+	BlogDetail.Author = "Dandi Saputra"
+	BlogDetail.FormatDate = BlogDetail.PostDate.Format("02 February 2006")
+
+	data := map[string]interface{}{
 		"Blog": BlogDetail,
 	}
 
-	return c.Render(http.StatusOK, "blog-detail.html", detailBlog)
+	return c.Render(http.StatusOK, "blog-detail.html", data)
 }
 
 func formAddBlog(c echo.Context) error {
 	return c.Render(http.StatusOK, "add-blog.html", nil)
 }
 
+func deleteBlog(c echo.Context) error {
+	id, _ := strconv.Atoi(c.Param("id")) //id = 2
+
+	_, err := connection.Conn.Exec(context.Background(), "DELETE FROM tb_blog WHERE id=$1", id)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"Message ": err.Error()})
+	}
+
+	return c.Redirect(http.StatusMovedPermanently, "/blog")
+}
+
 func addBlog(c echo.Context) error {
 	title := c.FormValue("inputTitle")
 	content := c.FormValue("inputContent")
+	image := "image.png"
 
-	println("Title: " + title)
-	println("Content: " + content)
+	_, err := connection.Conn.Exec(context.Background(), "INSERT INTO tb_blog (title, content, image, post_date) VALUES ($1, $2, $3, $4)", title, content, image, time.Now())
 
-	var newBlog = Blog{
-		Title:   title,
-		Content: content,
-		Author:  "Dandi Saputra",
-		// PostDate: time.Now().String(),
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"Message ": err.Error()})
 	}
 
-	dataBlog = append(dataBlog, newBlog)
-
 	return c.Redirect(http.StatusMovedPermanently, "/blog")
 }
-
-func deleteBlog(c echo.Context) error {
-	id, _ := strconv.Atoi(c.Param("id"))
-
-	dataBlog = append(dataBlog[:id], dataBlog[id+1:]...)
-
-	return c.Redirect(http.StatusMovedPermanently, "/blog")
-}
-
-// 3
-// [0, 1, 2, 3, 4, 5, 6]
-// [0, 1, 2]
-// [4, 5, 6]
-
-// [0, 1, 2, 4, 5,6]
