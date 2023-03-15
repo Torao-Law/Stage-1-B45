@@ -29,17 +29,17 @@
                     <ul class="navbar-nav me-auto mb-2 ms-5 mb-lg-0">
                       {{if .FlashStatus}}
                         <li class="nav-item">
-                            <a class="nav-link" href="/form-register">Hello, {{.FlashName}}</a>
+                            <a class="nav-link" href="#">Hello, {{.FlashName}}</a>
                         </li>
                         <li class="nav-item ms-3">
-                            <a class="nav-link" href="/login">Logout</a>
+                            <a class="nav-link" href="/logout">Logout</a>
                         </li>
                       {{else}}
                         <li class="nav-item">
                           <a class="nav-link" href="/form-register">Register</a>
                         </li>
                         <li class="nav-item ms-3">
-                            <a class="nav-link" href="/login">Login</a>
+                            <a class="nav-link" href="/form-login">Login</a>
                         </li>
                       {{end}}
                     </ul>

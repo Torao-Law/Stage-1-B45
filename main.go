@@ -39,6 +39,13 @@ type User struct {
 	Password string
 }
 
+type SessionData struct {
+	IsLogin bool
+	Name    string
+}
+
+var userData = SessionData{}
+
 func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
 	return t.templates.ExecuteTemplate(w, name, data)
 }
@@ -71,6 +78,7 @@ func main() {
 	e.POST("/login", login)
 	e.GET("/form-register", formRegister)
 	e.POST("/register", addRegister)
+	e.GET("/logout", logout)
 
 	fmt.Println("Server berjalan di port 5000")
 	e.Logger.Fatal(e.Start("localhost:5000"))
@@ -80,12 +88,12 @@ func home(c echo.Context) error {
 	sess, _ := session.Get("session", c)
 
 	flash := map[string]interface{}{
-		"FlashStatus":  sess.Values["status"],
+		"FlashStatus":  sess.Values["isLogin"],
 		"FlashMessage": sess.Values["message"],
 		"FlashName":    sess.Values["name"],
 	}
 	delete(sess.Values, "message")
-	// delete(sess.Values, "status")
+	delete(sess.Values, "status")
 	sess.Save(c.Request(), c.Response())
 	return c.Render(http.StatusOK, "index.html", flash)
 }
@@ -100,6 +108,14 @@ func blog1(c echo.Context) error {
 }
 
 func blog(c echo.Context) error {
+	sess, _ := session.Get("session", c)
+
+	if sess.Values["isLogin"] != true {
+		userData.IsLogin = false
+	} else {
+		userData.IsLogin = sess.Values["isLogin"].(bool)
+		userData.Name = sess.Values["name"].(string)
+	}
 	data, _ := connection.Conn.Query(context.Background(), "SELECT id, title, content, image, post_date FROM tb_blog")
 
 	var result []Blog
@@ -118,7 +134,8 @@ func blog(c echo.Context) error {
 	}
 
 	blogs := map[string]interface{}{
-		"Blogs": result,
+		"Blogs":       result,
+		"DataSession": userData,
 	}
 	return c.Render(http.StatusOK, "blog.html", blogs)
 }
@@ -190,7 +207,6 @@ func addRegister(c echo.Context) error {
 	name := c.FormValue("name")
 	email := c.FormValue("email")
 	password := c.FormValue("password")
-
 	passwordHash, _ := bcrypt.GenerateFromPassword([]byte(password), 10)
 
 	_, err = connection.Conn.Exec(context.Background(), "INSERT INTO tb_user (name, email, password) VALUES ($1, $2, $3)", name, email, passwordHash)
@@ -205,6 +221,11 @@ func addRegister(c echo.Context) error {
 func formLogin(c echo.Context) error {
 	sess, _ := session.Get("session", c)
 
+	flash := map[string]interface{}{
+		"FlashStatus":  sess.Values["status"],
+		"FlashMessage": sess.Values["message"],
+	}
+
 	delete(sess.Values, "message")
 	delete(sess.Values, "status")
 	tmpl, err := template.ParseFiles("views/login.html")
@@ -213,7 +234,7 @@ func formLogin(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"message ": err.Error()})
 	}
 
-	return tmpl.Execute(c.Response(), nil)
+	return tmpl.Execute(c.Response(), flash)
 }
 
 func login(c echo.Context) error {
@@ -240,13 +261,21 @@ func login(c echo.Context) error {
 	sess, _ := session.Get("session", c)
 	sess.Options.MaxAge = 10800 //3 jam
 	sess.Values["message"] = "Login Success !"
-	sess.Values["status"] = true
+	sess.Values["status"] = true //show alert
 	sess.Values["name"] = user.Name
 	sess.Values["id"] = user.ID
-	sess.Values["isLogin"] = true
+	sess.Values["isLogin"] = true //akses login
 	sess.Save(c.Request(), c.Response())
 
 	return c.Redirect(http.StatusMovedPermanently, "/")
+}
+
+func logout(c echo.Context) error {
+	sess, _ := session.Get("session", c)
+	sess.Options.MaxAge = -1
+	sess.Save(c.Request(), c.Response())
+
+	return c.Redirect(http.StatusTemporaryRedirect, "/")
 }
 
 func redirectWithMessage(c echo.Context, message string, status bool, path string) error {
