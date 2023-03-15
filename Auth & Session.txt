@@ -1,0 +1,17 @@
+Authentication = proses indentifikasi user ketika mengakses sebuah website.
+Session(sesi) = sekumpulan informasi ketika user sudah login.
+Encryption = mengubah pesan asli dengan hasil pesan acak.
+
+Auth
+1. Registrasi -> email & password (encryption)
+email : gendi@mail.com
+password : diayangselalutersakiti 
+
+email : gendi@mail.com
+password : "71cb84430d43fbc=76033a42b7f5b1a5d"
+
+2. email & password -> database
+3. login
+- mendapatkan data email & password 
+- compare email dari inputan dengan database 
+
