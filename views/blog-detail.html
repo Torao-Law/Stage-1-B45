@@ -28,8 +28,8 @@
     <div class="blog-detail">
       <div class="blog-detail-container">
         <h1>{{.Blog.Title}}</h1>
-        <div class="author">{{.Blog.Post_date}} | {{.Blog.Author}}</div>
-        <img src="/public/images/blog-img-detail.png" alt="detail" />
+        <div class="author">{{.Blog.FormatDate}} | {{.Blog.Author}}</div>
+        <img src="/upload/{{.Blog.Image}}" alt="detail" />
         <p>
           {{.Blog.Content}}
         </p>

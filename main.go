@@ -2,6 +2,7 @@ package main
 
 import (
 	"Personal-Web/connection"
+	"Personal-Web/middleware"
 	"context"
 	"fmt"
 	"io"
@@ -56,6 +57,7 @@ func main() {
 
 	// route statis untuk mengakses folder public
 	e.Static("/public", "public") // /public
+	e.Static("/upload", "upload")
 	// to use sessions using echo
 	e.Use(session.Middleware(sessions.NewCookieStore([]byte("session"))))
 
@@ -67,12 +69,12 @@ func main() {
 	e.Renderer = t
 
 	// Routing
-	e.GET("/", home)                      //localhost:5000
-	e.GET("/contact", contact)            //localhost:5000/contact
-	e.GET("/blog", blog)                  //localhost:5000/blog
-	e.GET("/blog-detail/:id", blogDetail) //localhost:5000/blog-detail/0 | :id = url params
-	e.GET("/form-blog", formAddBlog)      //localhost:5000/form-blog
-	e.POST("/add-blog", addBlog)          //localhost:5000/add-blog
+	e.GET("/", home)                                    //localhost:5000
+	e.GET("/contact", contact)                          //localhost:5000/contact
+	e.GET("/blog", blog)                                //localhost:5000/blog
+	e.GET("/blog-detail/:id", blogDetail)               //localhost:5000/blog-detail/0 | :id = url params
+	e.GET("/form-blog", formAddBlog)                    //localhost:5000/form-blog
+	e.POST("/add-blog", middleware.UploadFile(addBlog)) //localhost:5000/add-blog
 	e.GET("/delete-blog/:id", deleteBlog)
 	e.GET("/form-login", formLogin)
 	e.POST("/login", login)
@@ -116,18 +118,18 @@ func blog(c echo.Context) error {
 		userData.IsLogin = sess.Values["isLogin"].(bool)
 		userData.Name = sess.Values["name"].(string)
 	}
-	data, _ := connection.Conn.Query(context.Background(), "SELECT id, title, content, image, post_date FROM tb_blog")
+	data, _ := connection.Conn.Query(context.Background(), "SELECT tb_blog.id, title, content, image, post_date, tb_user.name as author FROM tb_blog LEFT JOIN tb_user ON tb_blog.author = tb_user.id ORDER BY id DESC")
 
 	var result []Blog
 	for data.Next() {
 		var each = Blog{}
 
-		err := data.Scan(&each.ID, &each.Title, &each.Content, &each.Image, &each.PostDate)
+		err := data.Scan(&each.ID, &each.Title, &each.Content, &each.Image, &each.PostDate, &each.Author)
 		if err != nil {
 			fmt.Println(err.Error())
 			return c.JSON(http.StatusInternalServerError, map[string]string{"Message ": err.Error()})
 		}
-		each.Author = "Dandi Saputra"
+
 		each.FormatDate = each.PostDate.Format("07 February 2006")
 
 		result = append(result, each)
@@ -143,13 +145,12 @@ func blog(c echo.Context) error {
 func blogDetail(c echo.Context) error {
 	id, _ := strconv.Atoi(c.Param("id")) // url params | dikonversikan dari string menjadi int/integer
 	var BlogDetail = Blog{}
-	err := connection.Conn.QueryRow(context.Background(), "SELECT id, title, content, image, post_date FROM tb_blog WHERE id=$1", id).Scan(&BlogDetail.ID, &BlogDetail.Title, &BlogDetail.Content, &BlogDetail.Image, &BlogDetail.PostDate)
+	err := connection.Conn.QueryRow(context.Background(), "SELECT tb_blog.id, title, content, image, post_date, tb_user.name as author FROM tb_blog LEFT JOIN tb_user ON tb_blog.author = tb_user.id WHERE tb_blog.id=$1", id).Scan(&BlogDetail.ID, &BlogDetail.Title, &BlogDetail.Content, &BlogDetail.Image, &BlogDetail.PostDate, &BlogDetail.Author)
 
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"Message ": err.Error()})
 	}
 
-	BlogDetail.Author = "Dandi Saputra"
 	BlogDetail.FormatDate = BlogDetail.PostDate.Format("02 February 2006")
 
 	data := map[string]interface{}{
@@ -175,11 +176,14 @@ func deleteBlog(c echo.Context) error {
 }
 
 func addBlog(c echo.Context) error {
-	title := c.FormValue("inputTitle")
-	content := c.FormValue("inputContent")
-	image := "image.png"
+	title := c.FormValue("title")
+	content := c.FormValue("content")
+	image := c.Get("dataFile").(string) // => image-982349187nfjka.png
 
-	_, err := connection.Conn.Exec(context.Background(), "INSERT INTO tb_blog (title, content, image, post_date) VALUES ($1, $2, $3, $4)", title, content, image, time.Now())
+	sess, _ := session.Get("session", c)
+	authorId := sess.Values["id"]
+
+	_, err := connection.Conn.Exec(context.Background(), "INSERT INTO tb_blog (title, content, image, post_date, author) VALUES ($1, $2, $3, $4, $5)", title, content, image, time.Now(), authorId)
 
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"Message ": err.Error()})
